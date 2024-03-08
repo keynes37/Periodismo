@@ -1,0 +1,439 @@
+---
+execute:
+    echo: false
+    warning: false
+    message: false
+    cache: false
+format:
+  revealjs:
+    footer: "[Universidad del Norte](https://www.uninorte.edu.co/)"
+    incremental: true
+    standalone: true
+    embed-resources: true
+    width: 1600
+    height: 900
+    theme: [default, custom.scss]
+    slide-number: true
+    fig-cap-location: top
+    fig-format: svg
+    pdf-separate-fragments: false
+---
+
+## {background-image="https://source.unsplash.com/F2KRf_QfCqw" visibility="uncounted"}
+
+::: {.title}
+Periodismo de Precisión
+:::
+
+::: {.author}
+Carlos A. Yanes
+:::
+
+::: {.date}
+`r format(Sys.time(), "%B %d, %Y")`
+:::
+
+
+```{r}
+library(pacman)
+p_load(here, tidyverse, TSstudio, readxl, fontawesome)
+```
+
+```{r}
+font_title <- "Josefin Sans"
+font_text <- "Montserrat"
+font_accent <- "Fira Sans"
+
+color_base <- "#1C5253"
+color_text <- "#272822"
+color_bg <- "#FFFFFF"
+color_accent <- "#EB811B"
+
+color_base_light <- xaringanthemer::lighten_color(color_base, strength = 0.33)
+color_accent_light <- xaringanthemer::lighten_color(color_accent, strength = 0.33)
+grey <- scales::alpha("grey", 0.7)
+```
+
+
+```{r}
+blend_colors <- function(x, y, alpha = 0.5) {
+  x <- colorspace::hex2RGB(x)
+  y <- colorspace::hex2RGB(y)
+  z <- colorspace::mixcolor(alpha, x, y)
+  colorspace::hex(z)
+}
+color_blender <- function(x, y) function(alpha = 0.5) blend_colors(x, y, alpha)
+
+theme_quarto <- function (
+    text_color = color_text,
+    background_color = color_bg,
+    text_font = font_text,
+    text_font_size = 30,
+    accent_color = color_base,
+    title_font = font_title,
+    title_font_size = 30
+){
+    blend <- color_blender(text_color, background_color)
+    ggplot2::theme(
+        line = ggplot2::element_line(color = blend(0.2)),
+        rect = ggplot2::element_rect(fill = background_color),
+        title = ggplot2::element_text(
+            color = accent_color,
+            family = title_font,
+            size = title_font_size
+        ),
+        plot.background = ggplot2::element_rect(
+            fill = background_color,
+            color = background_color
+        ),
+        panel.background = ggplot2::element_rect(
+            fill = background_color,
+            color = background_color
+        ),
+        panel.grid.major = ggplot2::element_line(
+            color = blend(0.8),
+            inherit.blank = TRUE
+        ),
+        panel.grid.minor = ggplot2::element_line(
+            color = blend(0.9),
+            inherit.blank = TRUE
+        ),
+        axis.title = ggplot2::element_text(size = title_font_size * 0.8),
+        axis.ticks = ggplot2::element_line(color = blend(0.8)),
+        axis.text = ggplot2::element_text(color = blend(0.4), size = title_font_size * 0.7),
+        legend.key = ggplot2::element_rect(fill = "transparent", colour = NA),
+        legend.text = ggplot2::element_text(size = title_font_size * 0.8, family = title_font),
+        plot.caption = ggplot2::element_text(
+            size = text_font_size * 0.8,
+            color = blend(0.3)
+        )
+    )
+}
+
+options(htmltools.dir.version = FALSE)
+```
+
+# Introducción y reglas {background-color="#1C5253" visibility="uncounted"}
+
+## Quién soy?
+
+- Profesor del Departamento de Economía
+- Preferencia por temas de Data Science, Economía de la Decisión, Microeconomía, Analítica y Economía laboral
+- Correo: `cayanes@uninorte.edu.co`
+- Website: [carlosyanes.netlify.app](https://carlosyanes.netlify.app/)
+- Syllabus: Compartido por el Coordinador Académico
+- Trabajo: Lo que se asigne en clases
+- Notas: Participación activa y retos
+
+# Empecemos 🤔 {background-color="#1C5253" visibility="uncounted"}
+
+## Inflación en Colombia
+
+- Como luce la cosa:
+
+::: fragment
+:::: {.columns}
+::: {.column width="25%"}
+```{r}
+#| echo: false
+#| message: false
+datainf <- read_excel("datainf.xlsx")
+datainf
+```
+:::
+
+::: {.column width="25%"}
+```{r}
+datainf[20:30,]
+```
+:::
+
+::: {.column width="25%"}
+```{r}
+tail(datainf, 11)
+```
+:::
+::::
+:::
+
+## Inflación en Colombia
+
+::: fragment
+- Como se ve:
+:::
+
+::: fragment
+```{r}
+#| out-width: 120%
+bb <- datainf |> select(inflacion)
+infs <- ts(bb, frequency=12, start=c(1993,1))
+ts_plot(infs, 
+        title = "Inflación en Colombia 1993-2024",
+        Ytitle = "Inflación")
+```
+:::
+
+## Inflación en Colombia
+
+::: fragment
+- Como se podría ver inclusive:
+:::
+
+::: fragment
+```{r}
+#| out-width: 120%
+ ts_seasonal(infs - decompose(infs)$trend, 
+             type = "all", 
+             title = "Gráfico Estacional - Inflación (sin tendencia)")
+```
+
+:::
+
+## Inflación en Colombia
+
+- Podemos usar algunos elementos de la [estadística tradicional]{.bg style="--col: #FFFF00"}. Estos suelen ser por ejemplo la media (promedio), varianza (desviación estandar), valores máximos y mínimos
+
+::: fragment
+```{r}
+#| echo: false
+summary(datainf$inflacion)
+```
+:::
+
+## Inflación en Colombia
+
+:::fragment
+```{r dane, fig.cap='Reporte Inflación 2024', out.width='80%', fig.asp=.75, fig.align='center', echo=FALSE}
+knitr::include_graphics("imagenes/datos.png")
+```
+:::
+
+## Tipos de historias a partir de los datos
+
+- Historia textual 
+- Visualización estática / infografía
+- Visualización de vídeo 
+- Visualización interactiva 
+- Aplicación de noticias
+
+# Historia Textual {background-color="#FFC300" visibility="uncounted"}
+
+## Historia textual
+
+::: fragment
+:::callout-note
+## Definición
+La historia procede del análisis de datos, pero el resultado es un artículo de texto tradicional.
+:::
+:::
+
+::: fragment
+Adicionalmente, los textos **periodísticos** se basan en un proceso hermenéutico que implica describir, comprender y explicar la realidad a [través de hechos]{.under}, obras, personajes, documentos y vivencias
+:::
+
+## Historia textual
+
+:::fragment
+```{r diario-el, fig.cap='Dolar Colombia. Portafolio', out.width='80%', fig.asp=.75, fig.align='center', echo=FALSE}
+knitr::include_graphics("imagenes/elportofiodolar.png")
+```
+:::
+
+## Historia textual
+
+![](imagenes/portcol01.gif)
+
+## Historia textual
+
+- Lista de items y consideraciones a tener en cuenta cuando queremos desarrollar una buena [historia]{.under}
+
+- ¿Quién está en el top o abajo? Un referente [Google Trends](https://trends.google.es/trends/yis/2023/CO/)
+
+- El espejo" o "la cara detrás de las cifras": ¿qué nos dicen los datos sobre nosotros mismos como país, sector o región?
+
+- Un suceso extraño o un cambio inusual: ¿qué ha cambiado en los datos de un momento o lugar a otro y por qué?
+
+- Una afirmación refutada o respaldada: ¿respaldan los datos las afirmaciones de un político, un "experto" o un experto?
+
+- ¿Reciben las personas de distintos lugares un tratamiento o acceso diferentes, o se les cobra de forma diferente?
+
+- Las cosas suceden juntas: ¿sube una cosa cuando sube otra? ¿O una cosa baja cuando otra sube, o viceversa? Tenga en cuenta que esto no significa causalidad.
+
+## Reto 1 🤓 {background-color="#ADD8E6" visibility="uncounted"}
+
+- Visualice el siguiente [video](https://www.youtube.com/watch?v=KnV_5qlkD2Y)
+
+- Mencione y discuta los elementos mas importante de ello
+- Construya un ejemplo de historia y revise con el profesor
+
+# Visualización estática / infografía {background-color="#FFC300" visibility="uncounted"}
+
+## Visualización estática / infografía
+
+::: fragment
+:::callout-note
+## Definición
+Son los Datos convertidos en una imagen estática. Puede publicarse en papel.
+
+:::
+:::
+
+::: fragment
+A veces se denomina "infografía", que suele tener mucho [diseño gráfico]{.under}.
+:::
+:::fragment
+```{r echo=FALSE, fig.height=7, fig.width=13}
+library(treemapify)
+grupo<-c("Actividades Profesionales", "Administración pública","Entretenimiento", "Impuestos", "Agrícola", "Minero", "Industria", "Servicios Públicos", "Construcción", "Comercio, hoteles y restaurantes", "Tics", "Financiero", "Inmobiliarias")
+valor<-c(7.5,16.1,7.2,10,1.1,0.2,16.3,6.5,8.5,20,2.9,4.5,7.3)
+df<- data.frame(grupo, valor)
+
+#Arbol
+ggplot(df, aes(area=valor, fill=valor, label=grupo))+
+  geom_treemap() + 
+  geom_treemap_text(colour="white",
+                    place= "centre",
+                    size=18)
+```
+:::
+
+## Visualización estática / infografía
+
+- En infografías va a depender a los entornos que esta sea clave. Nivel institucional (correos internos, campaña, etc,.), un ejemplo de ello:
+
+:::fragment
+```{r infot, fig.cap='Infografía de Tasas de interés', out.width='50%', fig.asp=.75, fig.align='center', echo=FALSE}
+knitr::include_graphics("imagenes/pic02.png")
+```
+:::
+
+## Visualización estática / infografía
+
+- Veamos un caso formal de tasas. Miremos que en finanzas se tiene presente que:
+
+:::fragment
+$$(1+\text{Tasa Nominal})^n=(1+\text{Tasa Efectiva})$$
+:::
+
+- La equivalencia de tasas nos permite decir la verdad:
+
+:::fragment
+$$(1+\text{Tasa Nominal})^n-1=\color{red}{\text{Tasa Efectiva}}$$
+:::
+
+## Visualización estática / infografía
+
+#### Ejemplo de tasas de interés 
+
+- Digamos que los bancos están ofreciendo un préstamo con tasa de interés nominal -*siempre ofrecen esta porque es menor a la efectiva*-. La idea es brindar mejor información:
+
+:::fragment
+::: callout-tip
+Un tasa que dicen que es nominal mensual 1.5%. Cuanto es en realidad su costo?
+$$(1+0.015)^{12}-1=19.56\%$$
+:::
+:::
+
+- Los bancos [ofrecen]{.alert} sutilmente eso. Del lado contrario también se puede hacer: Digamos que le piden hacer una campaña para vender créditos.
+
+# Visualización de vídeo {background-color="#FFC300" visibility="uncounted"}
+
+## Visualización de vídeo
+
+::: fragment
+:::callout-note
+## Definición
+[Visualización]{.bg style="--col: #00FFFF"} animada utilizada para contar una historia. Sirve para la emisión de noticias, pero es más común para el vídeo en línea. Se puede hacer una presentación interactiva durante la emisión.
+:::
+:::
+
+::: fragment
+{{< video https://www.youtube.com/embed/8HWy_F_Zr-0 width="950" height="625" >}}
+:::
+
+## Visualización de vídeo
+
+::: fragment
+{{< video https://www.youtube.com/embed/EawzSHOc5V0 width="1250" height="625" >}}
+:::
+
+## Reto 2 🤓 {background-color="#ADD8E6" visibility="uncounted"}
+
+- Busque un tema que le interese, debe tener información o datos para trabajar con ello
+- Realice un gráfico, puede inclusive hacer un poster
+- Revise con los compañeros y profesor
+
+# Visualización interactiva {background-color="#FFC300" visibility="uncounted"}
+
+## Visualización interactiva
+
+::: fragment
+:::callout-note
+## Definición
+[Visualización]{.bg style="--col: #00FFFF"} en un formato donde el usuario puede elegir examinar distintas partes de los datos.
+:::
+:::
+
+- Lo interactivo permite una interfaz mas dinámica para la experiencia del usuario. 
+- Existen muchas maneras y formas de tener interactividad vía `html` como también de las infinidades de los recursos de web
+
+## Visualización interactiva
+
+<iframe src="https://ourworldindata.org/grapher/new-vehicles-type-share?country=~GBR" loading="lazy" style="width: 100%; height: 600px; border: 0px none;"></iframe>
+
+## Visualización interactiva
+
+:::fragment
+```{r}
+#| echo: false
+#| message: false
+#| fig-width: 12
+#| fig-height: 8
+library(plotly)
+library(quantmod)
+getSymbols("AAPL",src='yahoo')
+
+df <- data.frame(Date=index(AAPL),coredata(AAPL))
+df <- tail(df, 30)
+
+fig <- df %>% plot_ly(x = ~Date, type="candlestick",
+          open = ~AAPL.Open, close = ~AAPL.Close,
+          high = ~AAPL.High, low = ~AAPL.Low) 
+fig <- fig %>% layout(title = "Gráfico Básico de velas ",
+         xaxis = list(rangeslider = list(visible = F)))
+fig
+```
+:::
+
+
+## Visualización interactiva
+
+:::fragment
+Uno mas, pero del desempleo en [Economy New York times](https://archive.nytimes.com/www.nytimes.com/interactive/2009/11/06/business/economy/unemployment-lines.html)
+:::
+
+:::fragment
+Acá un ejemplo de una [survey interactiva](https://news.sky.com/story/budget-2023-calculator-see-if-you-are-better-or-worse-off-after-chancellor-jeremy-hunts-statement-12834667)
+:::
+
+## Reto 3 🤓 {background-color="#ADD8E6" visibility="uncounted"}
+
+- Siga las instrucciones para el trabajo en código python
+- Si tiene datos propios, intente replicar lo hecho en clases
+- Puede construir directamente sus conclusiones con ello.
+
+## Bibliografía
+
+`r fa('book')` Bradshaw, P. (2015). *Online Journalism: The Essential Guide*.
+
+`r fa('book')` Bounegru, L., & Gray, J. (2021). *The data journalism handbook: Towards a critical data practice (p. 415)*. Amsterdam University Press.
+
+`r fa('book')` Stray, J., (2016) Lecture notes Course *Interactive Data Journalism*. MIMEO
+
+##  {background-image="imagenes/endclass.jpg"}
+
+### Gracias por su atención!! {.r-fit-text}
+
+#### cayanes\@uninorte.edu.co
+
+#### [carlosyanes.netlify.app](https://carlosyanes.netlify.app/)
